@@ -30,7 +30,8 @@ app.post('/', async (req, res) => {
 
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
-  const cel = message.from?.slice(-10);
+  if (message?.type === "text") {
+    const cel = message.from?.slice(-10);
   const celDestino = `52${cel}`;
   /*console.log(message);
   console.log(business_phone_number_id);
@@ -95,6 +96,8 @@ app.post('/', async (req, res) => {
   console.error("Error consumiendo WA API:", error);
 }
   }
+  }
+  
   res.status(200).end();
 });
 
