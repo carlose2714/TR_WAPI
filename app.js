@@ -28,6 +28,44 @@ app.post('/', (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n\nWebhook received ${timestamp}\n`);
   console.log(JSON.stringify(req.body, null, 2));
+  const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
+  const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
+  if(message == "Hola"){
+    try {
+                // send a reply message as per the docs here https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
+                await axios({
+                    method: "POST",
+                    url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
+                    headers: {
+                        Authorization: `Bearer ${verifyToken}`,
+                    },
+                    data: {
+                        messaging_product: "whatsapp",
+                        to: message.from,
+                        text: { body: "Hola, soy el asistente de Laboratorios Barrera.\n\nA continuación, seleccione una opción del menú." },
+                        context: {
+                            message_id: message.id, // shows the message as a reply to the original user message
+                        },
+                    },
+                });
+
+                // mark incoming message as read
+                await axios({
+                    method: "POST",
+                    url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
+                    headers: {
+                        Authorization: `Bearer ${verifyToken}`,
+                    },
+                    data: {
+                        messaging_product: "whatsapp",
+                        status: "read",
+                        message_id: message.id,
+                    },
+                });
+            } catch (error) {
+                console.error("Error consuming WA API:", error);
+            }
+  }
   res.status(200).end();
 });
 
