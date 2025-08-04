@@ -30,15 +30,18 @@ app.post('/', async (req, res) => {
 
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
+  const cel = message.from.slice(-10);
+  const celDestino = `52${last10}`;
   console.log(message);
   console.log(business_phone_number_id);
+  console.log(celDestino);
 
   if(message.text.body == "Hola"){
     try {
   // 1) Enviar mensaje de bienvenida
   const sendPayload = {
     messaging_product: "whatsapp",
-    to: message.from,
+    to: celDestino,
     text: {
       body: "Hola, soy el asistente de Laboratorios Barrera.\n\nA continuación, seleccione una opción del menú."
     },
