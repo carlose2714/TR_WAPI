@@ -30,12 +30,14 @@ app.post('/', async (req, res) => {
   console.log(JSON.stringify(req.body, null, 2));
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
-  if(message == "Hola"){
+  console.log(message);
+  console.log(business_phone_number_id);
+  if(message.body == "Hola"){
     try {
                 // send a reply message as per the docs here https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
                 await axios({
                     method: "POST",
-                    url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
+                    url: `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
                     headers: {
                         Authorization: `Bearer ${verifyToken}`,
                     },
