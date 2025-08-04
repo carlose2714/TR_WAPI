@@ -35,7 +35,7 @@ app.post('/', async (req, res) => {
     } catch (error) {
                 console.error("Error consuming WA API:", error);
             }
-  if(message.body == "Hola"){
+  if(message.text.body == "Hola"){
     try {
   // 1) Enviar mensaje de bienvenida
   const sendPayload = {
