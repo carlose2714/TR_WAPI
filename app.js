@@ -1,7 +1,5 @@
 // Import Express.js
 const express = require('express');
-import axios from "axios";
-
 // Create an Express app
 const app = express();
 
@@ -39,39 +37,62 @@ app.post('/', async (req, res) => {
             }
   if(message.body == "Hola"){
     try {
-                // send a reply message as per the docs here https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
-                await axios({
-                    method: "POST",
-                    url: `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
-                    headers: {
-                        Authorization: `Bearer ${verifyToken}`,
-                    },
-                    data: {
-                        messaging_product: "whatsapp",
-                        to: message.from,
-                        text: { body: "Hola, soy el asistente de Laboratorios Barrera.\n\nA continuación, seleccione una opción del menú." },
-                        context: {
-                            message_id: message.id, // shows the message as a reply to the original user message
-                        },
-                    },
-                });
+  // 1) Enviar mensaje de bienvenida
+  const sendPayload = {
+    messaging_product: "whatsapp",
+    to: message.from,
+    text: {
+      body: "Hola, soy el asistente de Laboratorios Barrera.\n\nA continuación, seleccione una opción del menú."
+    },
+    context: {
+      message_id: message.id
+    }
+  };
 
-                // mark incoming message as read
-                await axios({
-                    method: "POST",
-                    url: `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
-                    headers: {
-                        Authorization: `Bearer ${verifyToken}`,
-                    },
-                    data: {
-                        messaging_product: "whatsapp",
-                        status: "read",
-                        message_id: message.id,
-                    },
-                });
-            } catch (error) {
-                console.error("Error consuming WA API:", error);
-            }
+  let response = await fetch(
+    `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${verifyToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(sendPayload)
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.json();
+    console.error("Error al enviar mensaje:", err);
+  }
+
+  // 2) Marcar mensaje entrante como leído
+  const readPayload = {
+    messaging_product: "whatsapp",
+    status: "read",
+    message_id: message.id
+  };
+
+  response = await fetch(
+    `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${verifyToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(readPayload)
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.json();
+    console.error("Error al marcar mensaje como leído:", err);
+  }
+
+} catch (error) {
+  console.error("Error consumiendo WA API:", error);
+}
   }
   res.status(200).end();
 });
