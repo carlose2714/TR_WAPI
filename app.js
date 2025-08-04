@@ -27,14 +27,12 @@ app.post('/', async (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n\nWebhook received ${timestamp}\n`);
   console.log(JSON.stringify(req.body, null, 2));
-  try {
+
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
   console.log(message);
   console.log(business_phone_number_id);
-    } catch (error) {
-                console.error("Error consuming WA API:", error);
-            }
+
   if(message.text.body == "Hola"){
     try {
   // 1) Enviar mensaje de bienvenida
