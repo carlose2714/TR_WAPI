@@ -1,5 +1,6 @@
 // Import Express.js
 const express = require('express');
+const axios = require('axios');
 
 // Create an Express app
 const app = express();
@@ -28,10 +29,14 @@ app.post('/', async (req, res) => {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
   console.log(`\n\nWebhook received ${timestamp}\n`);
   console.log(JSON.stringify(req.body, null, 2));
+  try {
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
   console.log(message);
   console.log(business_phone_number_id);
+    } catch (error) {
+                console.error("Error consuming WA API:", error);
+            }
   if(message.body == "Hola"){
     try {
                 // send a reply message as per the docs here https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
@@ -54,7 +59,7 @@ app.post('/', async (req, res) => {
                 // mark incoming message as read
                 await axios({
                     method: "POST",
-                    url: `https://graph.facebook.com/v18.0/${business_phone_number_id}/messages`,
+                    url: `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
                     headers: {
                         Authorization: `Bearer ${verifyToken}`,
                     },
