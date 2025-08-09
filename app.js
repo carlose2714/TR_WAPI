@@ -1,6 +1,6 @@
 // Import Express.js
 const express = require('express');
-const fetch = require('node-fetch'); // Asegúrate de tener node-fetch instalado
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 // Create an Express app
 const app = express();
 
