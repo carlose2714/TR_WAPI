@@ -1,4 +1,5 @@
-// Import Express.js
+import HttpClient from "./httpClient";
+const API_BASE = process.env.API_BASE_URL; // ej. "https://tuservidor/api"
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 // Create an Express app
@@ -6,10 +7,10 @@ const app = express();
 
 // Middleware to parse JSON bodies
 app.use(express.json());
-
+const verifyToken = process.env.VERIFY_TOKEN;
+const whatsappToken = process.env.WHATSAPP_TOKEN;
 // Set port and verify_token
 const port = process.env.PORT || 3000;
-const verifyToken = process.env.VERIFY_TOKEN;
 
 // Estado simple en memoria por usuario (celular)
 const userStates = {};
@@ -28,7 +29,7 @@ async function sendWhatsappMessage(to, body, business_phone_number_id, contextMe
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${verifyToken}`,
+        "Authorization": `Bearer ${whatsappToken}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
@@ -68,7 +69,7 @@ async function markAsRead(businessId, messageId) {
   await fetch(`https://graph.facebook.com/v22.0/${businessId}/messages`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${verifyToken}`,
+      "Authorization": `Bearer ${whatsappToken}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(readPayload)
@@ -129,20 +130,43 @@ const stepHandlers = {
   },
 
   esperando_folio_estatus: async ({ userInput, celDestino, businessId }) => {
-    if (userInput.toUpperCase() === "ABC12345") {
+      try {
+      const data = await HttpClient.post(`${API_BASE}/AnalisisEstatusFolio`, {
+        Folio: userInput
+      });
+
+      if (data && data.length > 0) {
+        const analisis = data[0];
+
+        const mensaje = `El estatus de tu análisis ${analisis.Folio} es:
+  • Estado: ${analisis.Estatus}
+  • Fecha de solicitud: ${new Date(analisis.Fecha).toLocaleDateString("es-MX")}
+  • Fecha de entrega: ${analisis.FechaEntrega ?? "NA"}
+
+  ¿Necesitas algo más?
+  1️⃣ Volver al menú
+  2️⃣ Finalizar conversación`;
+
+        await sendWhatsappMessage(celDestino, mensaje, businessId);
+        return { step: "fin_estatus" };
+      } else {
+        await sendWhatsappMessage(
+          celDestino,
+          `No encontramos ningún registro con folio ${userInput}.
+  Verifica tu folio e inténtalo de nuevo.`,
+          businessId
+        );
+        return { step: "esperando_folio_estatus" };
+      }
+    } catch (error) {
+      console.error("Error consultando estatus:", error.message);
       await sendWhatsappMessage(
         celDestino,
-        "El estatus de tu análisis ABC12345 es:\n• Estado: En proceso\n• Fecha de solicitud: 15/07/2025\n• Fecha de entrega: 18/07/2025\n\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+        "Ocurrió un error al consultar el estatus. Intenta más tarde.",
         businessId
       );
-      return { step: "fin_estatus" };
+      return { step: "esperando_folio_estatus" };
     }
-    await sendWhatsappMessage(
-      celDestino,
-      `No encontramos ningún registro con folio ${userInput}.\nVerifica tu folio e inténtalo de nuevo.`,
-      businessId
-    );
-    return { step: "esperando_folio_estatus" };
   },
 
   esperando_folio_descarga: async ({ userInput, celDestino, businessId }) => {
@@ -232,4 +256,8 @@ app.post("/", async (req, res) => {
 // Start the server
 app.listen(port, () => {
   console.log(`\nListening on port ${port}\n`);
+});
+
+app.get('/webhook/test', (req, res) => {
+  res.send('Webhook funcionando y redirigido por IIS');
 });
