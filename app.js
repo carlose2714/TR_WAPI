@@ -1,4 +1,4 @@
-import HttpClient from "./httpClient.js";
+const HttpClient = require('./httpClient'); // sin extensión si está en la misma carpeta
 const API_BASE = process.env.API_BASE_URL; // ej. "https://tuservidor/api"
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));

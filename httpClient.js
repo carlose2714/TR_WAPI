@@ -34,4 +34,5 @@ function HttpClient() {
   };
 }
 
-export default HttpClient();
+// Exportar en CommonJS
+module.exports = HttpClient();
