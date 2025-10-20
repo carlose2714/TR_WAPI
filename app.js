@@ -130,44 +130,59 @@ const stepHandlers = {
   },
 
   esperando_folio_estatus: async ({ userInput, celDestino, businessId }) => {
-      try {
-      const data = await HttpClient.post(`${API_BASE}/AnalisisEstatusFolio`, {
-        Folio: userInput
-      });
+  try {
+    console.log("👉 Iniciando consulta de estatus con folio:", userInput);
 
-      if (data && data.length > 0) {
-        const analisis = data[0];
+    const data = await HttpClient.post(`${API_BASE}/AnalisisEstatusFolio`, {
+      Folio: userInput
+    });
 
-        const mensaje = `El estatus de tu análisis ${analisis.Folio} es:
+    console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
+
+    if (data && data.length > 0) {
+      const analisis = data[0];
+
+      console.log("👉 Primer registro recibido:", analisis);
+      console.log("👉 Campos individuales:",
+        "Folio:", analisis.Folio,
+        "Fecha:", analisis.Fecha,
+        "Estatus:", analisis.Estatus,
+        "FechaEntrega:", analisis.FechaEntrega
+      );
+
+      const mensaje = `El estatus de tu análisis ${analisis.Folio} es:
   • Estado: ${analisis.Estatus}
-  • Fecha de solicitud: ${new Date(analisis.Fecha).toLocaleDateString("es-MX")}
+  • Fecha de solicitud: ${analisis.Fecha ? new Date(analisis.Fecha).toLocaleDateString("es-MX") : "NA"}
   • Fecha de entrega: ${analisis.FechaEntrega ?? "NA"}
 
   ¿Necesitas algo más?
   1️⃣ Volver al menú
   2️⃣ Finalizar conversación`;
 
-        await sendWhatsappMessage(celDestino, mensaje, businessId);
-        return { step: "fin_estatus" };
-      } else {
-        await sendWhatsappMessage(
-          celDestino,
-          `No encontramos ningún registro con folio ${userInput}.
-  Verifica tu folio e inténtalo de nuevo.`,
-          businessId
-        );
-        return { step: "esperando_folio_estatus" };
-      }
-    } catch (error) {
-      console.error("Error consultando estatus:", error.message);
+      await sendWhatsappMessage(celDestino, mensaje, businessId);
+      return { step: "fin_estatus" };
+    } else {
+      console.log("👉 No se encontraron registros para el folio:", userInput);
+
       await sendWhatsappMessage(
         celDestino,
-        "Ocurrió un error al consultar el estatus. Intenta más tarde.",
+        `No encontramos ningún registro con folio ${userInput}.
+Verifica tu folio e inténtalo de nuevo.`,
         businessId
       );
       return { step: "esperando_folio_estatus" };
     }
-  },
+  } catch (error) {
+    console.error("❌ Error consultando estatus:", error);
+
+    await sendWhatsappMessage(
+      celDestino,
+      "Ocurrió un error al consultar el estatus. Intenta más tarde.",
+      businessId
+    );
+    return { step: "esperando_folio_estatus" };
+  }
+},
 
   esperando_folio_descarga: async ({ userInput, celDestino, businessId }) => {
     if (userInput.toUpperCase() === "XYZ98765") {
