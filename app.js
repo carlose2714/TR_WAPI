@@ -40,7 +40,6 @@ async function sendWhatsappMessage(to, body, business_phone_number_id, contextMe
   }
 }
 
-
 // Route for GET requests
 app.get('/', (req, res) => {
   const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
@@ -53,174 +52,181 @@ app.get('/', (req, res) => {
   }
 });
 
-// Route for POST requests
-app.post('/', async (req, res) => {
-  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  console.log(`\n\nWebhook received ${timestamp}\n`);
-  console.log(JSON.stringify(req.body, null, 2));
+// Utilidad: normalizar número
+function getCelDestino(from) {
+  const cel = from?.replace(/\D/g, "").slice(-10);
+  return `52${cel}`;
+}
 
-  const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
-  const business_phone_number_id = req.body.entry?.[0].changes?.[0].value?.metadata?.phone_number_id;
-  if (message?.type === "text") {
-    const cel = message.from?.slice(-10);
-    const celDestino = `52${cel}`;
-    const userInput = message.text.body.trim();
-    const userState = userStates[celDestino] || { step: "inicio" };
+// Utilidad: marcar mensaje como leído
+async function markAsRead(businessId, messageId) {
+  const readPayload = {
+    messaging_product: "whatsapp",
+    status: "read",
+    message_id: messageId
+  };
+  await fetch(`https://graph.facebook.com/v22.0/${businessId}/messages`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${verifyToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(readPayload)
+  });
+}
 
-    // Flujo conversacional
-    if (userInput.toLowerCase() === "hola" && userState.step === "inicio") {
-      // Menú principal
+// Diccionario de handlers por estado
+const stepHandlers = {
+  inicio: async ({ userInput, celDestino, businessId, message }) => {
+    if (userInput.toLowerCase() === "hola") {
       await sendWhatsappMessage(
         celDestino,
         "¡Hola! Soy el asistente virtual de Laboratorios Barrera.\n¿En qué puedo ayudarte hoy?\n1️⃣ Consultar estatus de mis análisis\n2️⃣ Descargar resultados\n3️⃣ Solicitar cotización\n\nEscribe el número de la opción deseada.",
-        business_phone_number_id,
+        businessId,
         message.id
       );
-      userStates[celDestino] = { step: "menu" };
-    } else if (userState.step === "menu") {
-      if (userInput === "1") {
+      return { step: "menu" };
+    }
+    await sendWhatsappMessage(
+      celDestino,
+      "¡Hola! Escribe 'Hola' para iniciar la conversación.",
+      businessId
+    );
+    return { step: "inicio" };
+  },
+
+  menu: async ({ userInput, celDestino, businessId }) => {
+    switch (userInput) {
+      case "1":
         await sendWhatsappMessage(
           celDestino,
           "Por favor, indícame el número de folio de tus análisis.",
-          business_phone_number_id
+          businessId
         );
-        userStates[celDestino] = { step: "esperando_folio_estatus" };
-      } else if (userInput === "2") {
+        return { step: "esperando_folio_estatus" };
+      case "2":
         await sendWhatsappMessage(
           celDestino,
           "Para generar tu enlace de descarga, indícame tu número de folio.",
-          business_phone_number_id
+          businessId
         );
-        userStates[celDestino] = { step: "esperando_folio_descarga" };
-      } else if (userInput === "3") {
+        return { step: "esperando_folio_descarga" };
+      case "3":
         await sendWhatsappMessage(
           celDestino,
           "Por favor, indícanos los estudios que deseas cotizar y un asesor te contactará.",
-          business_phone_number_id
+          businessId
         );
-        userStates[celDestino] = { step: "cotizacion" };
-      } else {
+        return { step: "cotizacion" };
+      default:
         await sendWhatsappMessage(
           celDestino,
           "Opción no válida. Por favor, escribe el número de la opción deseada.",
-          business_phone_number_id
+          businessId
         );
-      }
-    } else if (userState.step === "esperando_folio_estatus") {
-      // Simulación de consulta de estatus (dummy)
-      if (userInput.toUpperCase() === "ABC12345") {
-        await sendWhatsappMessage(
-          celDestino,
-          "El estatus de tu análisis ABC12345 es:\n• Estado: En proceso\n• Fecha de solicitud: 15/07/2025\n• Fecha de entrega: 18/07/2025\n\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
-          business_phone_number_id
-        );
-        userStates[celDestino] = { step: "fin_estatus" };
-      } else {
-        await sendWhatsappMessage(
-          celDestino,
-          `No encontramos ningún registro con folio ${userInput}.\nVerifica tu folio e inténtalo de nuevo.`,
-          business_phone_number_id
-        );
-        // Mantener en el mismo paso
-      }
-    } else if (userState.step === "esperando_folio_descarga") {
-      // Simulación de generación de enlace (dummy)
-      if (userInput.toUpperCase() === "XYZ98765") {
-        await sendWhatsappMessage(
-          celDestino,
-          "Tu enlace de descarga está listo:\nhttps://labxyz.com/resultados/XYZ98765\nEl enlace expirará en 48 horas.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
-          business_phone_number_id
-        );
-        userStates[celDestino] = { step: "fin_descarga" };
-      } else {
-        await sendWhatsappMessage(
-          celDestino,
-          `No encontramos resultados disponibles para el folio ${userInput}.\nAsegúrate de que tus análisis hayan sido procesados.`,
-          business_phone_number_id
-        );
-        // Mantener en el mismo paso
-      }
-    } else if (userState.step === "fin_estatus" || userState.step === "fin_descarga") {
-      if (userInput === "1") {
-        await sendWhatsappMessage(
-          celDestino,
-          "¿En qué puedo ayudarte hoy?\n1️⃣ Consultar estatus de mis análisis\n2️⃣ Descargar resultados\n3️⃣ Solicitar cotización\n\nEscribe el número de la opción deseada.",
-          business_phone_number_id
-        );
-        userStates[celDestino] = { step: "menu" };
-      } else if (userInput === "2") {
-        await sendWhatsappMessage(
-          celDestino,
-          "¡Gracias por contactarnos! Si necesitas algo más, escribe 'Hola'.",
-          business_phone_number_id
-        );
-        userStates[celDestino] = { step: "inicio" };
-      } else {
-        await sendWhatsappMessage(
-          celDestino,
-          "Opción no válida. Escribe 1 para volver al menú o 2 para finalizar.",
-          business_phone_number_id
-        );
-      }
-    } else if (userState.step === "cotizacion") {
-      await sendWhatsappMessage(
-        celDestino,
-        "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
-        business_phone_number_id
-      );
-      userStates[celDestino] = { step: "fin_cotizacion" };
-    } else if (userState.step === "fin_cotizacion") {
-      if (userInput === "1") {
-        await sendWhatsappMessage(
-          celDestino,
-          "¿En qué puedo ayudarte hoy?\n1️⃣ Consultar estatus de mis análisis\n2️⃣ Descargar resultados\n3️⃣ Solicitar cotización\n\nEscribe el número de la opción deseada.",
-          business_phone_number_id
-        );
-        userStates[celDestino] = { step: "menu" };
-      } else if (userInput === "2") {
-        await sendWhatsappMessage(
-          celDestino,
-          "¡Gracias por contactarnos! Si necesitas algo más, escribe 'Hola'.",
-          business_phone_number_id
-        );
-        userStates[celDestino] = { step: "inicio" };
-      } else {
-        await sendWhatsappMessage(
-          celDestino,
-          "Opción no válida. Escribe 1 para volver al menú o 2 para finalizar.",
-          business_phone_number_id
-        );
-      }
-    } else {
-      // Si no hay estado, pedir que escriba "Hola"
-      await sendWhatsappMessage(
-        celDestino,
-        "¡Hola! Escribe 'Hola' para iniciar la conversación.",
-        business_phone_number_id
-      );
-      userStates[celDestino] = { step: "inicio" };
+        return { step: "menu" };
     }
+  },
 
-    // Marcar mensaje como leído
-    const readPayload = {
-      messaging_product: "whatsapp",
-      status: "read",
-      message_id: message.id
-    };
-    await fetch(
-      `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${verifyToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(readPayload)
-      }
+  esperando_folio_estatus: async ({ userInput, celDestino, businessId }) => {
+    if (userInput.toUpperCase() === "ABC12345") {
+      await sendWhatsappMessage(
+        celDestino,
+        "El estatus de tu análisis ABC12345 es:\n• Estado: En proceso\n• Fecha de solicitud: 15/07/2025\n• Fecha de entrega: 18/07/2025\n\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+        businessId
+      );
+      return { step: "fin_estatus" };
+    }
+    await sendWhatsappMessage(
+      celDestino,
+      `No encontramos ningún registro con folio ${userInput}.\nVerifica tu folio e inténtalo de nuevo.`,
+      businessId
     );
+    return { step: "esperando_folio_estatus" };
+  },
+
+  esperando_folio_descarga: async ({ userInput, celDestino, businessId }) => {
+    if (userInput.toUpperCase() === "XYZ98765") {
+      await sendWhatsappMessage(
+        celDestino,
+        "Tu enlace de descarga está listo:\nhttps://labxyz.com/resultados/XYZ98765\nEl enlace expirará en 48 horas.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+        businessId
+      );
+      return { step: "fin_descarga" };
+    }
+    await sendWhatsappMessage(
+      celDestino,
+      `No encontramos resultados disponibles para el folio ${userInput}.\nAsegúrate de que tus análisis hayan sido procesados.`,
+      businessId
+    );
+    return { step: "esperando_folio_descarga" };
+  },
+
+  fin_estatus: async ({ userInput, celDestino, businessId }) =>
+    handleFin(userInput, celDestino, businessId),
+  fin_descarga: async ({ userInput, celDestino, businessId }) =>
+    handleFin(userInput, celDestino, businessId),
+
+  cotizacion: async ({ celDestino, businessId }) => {
+    await sendWhatsappMessage(
+      celDestino,
+      "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+      businessId
+    );
+    return { step: "fin_cotizacion" };
+  },
+
+  fin_cotizacion: async ({ userInput, celDestino, businessId }) =>
+    handleFin(userInput, celDestino, businessId)
+};
+
+// Handler común para pasos de finalización
+async function handleFin(userInput, celDestino, businessId) {
+  if (userInput === "1") {
+    await sendWhatsappMessage(
+      celDestino,
+      "¿En qué puedo ayudarte hoy?\n1️⃣ Consultar estatus de mis análisis\n2️⃣ Descargar resultados\n3️⃣ Solicitar cotización\n\nEscribe el número de la opción deseada.",
+      businessId
+    );
+    return { step: "menu" };
+  } else if (userInput === "2") {
+    await sendWhatsappMessage(
+      celDestino,
+      "¡Gracias por contactarnos! Si necesitas algo más, escribe 'Hola'.",
+      businessId
+    );
+    return { step: "inicio" };
+  }
+  await sendWhatsappMessage(
+    celDestino,
+    "Opción no válida. Escribe 1 para volver al menú o 2 para finalizar.",
+    businessId
+  );
+  return { step: "inicio" };
+}
+
+// Route
+app.post("/", async (req, res) => {
+  const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
+  const businessId = req.body.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id;
+
+  if (message?.type === "text") {
+    const celDestino = getCelDestino(message.from);
+    const userInput = message.text.body.trim();
+    const userState = userStates[celDestino] || { step: "inicio" };
+
+    const handler = stepHandlers[userState.step] || stepHandlers["inicio"];
+    userStates[celDestino] = await handler({
+      userInput,
+      celDestino,
+      businessId,
+      message
+    });
+
+    await markAsRead(businessId, message.id);
   }
 
-  res.status(200).end();
+  res.sendStatus(200);
 });
 
 // Start the server
