@@ -144,16 +144,16 @@ const stepHandlers = {
 
       console.log("👉 Primer registro recibido:", analisis);
       console.log("👉 Campos individuales:",
-        "Folio:", analisis.Folio,
-        "Fecha:", analisis.Fecha,
-        "Estatus:", analisis.Estatus,
-        "FechaEntrega:", analisis.FechaEntrega
+        "Folio:", analisis.folio,
+        "Fecha:", analisis.fecha,
+        "Estatus:", analisis.estatus,
+        "FechaEntrega:", analisis.fechaEntrega
       );
 
-      const mensaje = `El estatus de tu análisis ${analisis.Folio} es:
-  • Estado: ${analisis.Estatus}
-  • Fecha de solicitud: ${analisis.Fecha ? new Date(analisis.Fecha).toLocaleDateString("es-MX") : "NA"}
-  • Fecha de entrega: ${analisis.FechaEntrega ?? "NA"}
+      const mensaje = `El estatus de tu análisis ${analisis.folio} es:
+  • Estado: ${analisis.estatus}
+  • Fecha de solicitud: ${analisis.fecha ? new Date(analisis.fecha).toLocaleDateString("es-MX") : "NA"}
+  • Fecha de entrega: ${analisis.fechaEntrega ?? "NA"}
 
   ¿Necesitas algo más?
   1️⃣ Volver al menú
