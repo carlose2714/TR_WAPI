@@ -1,4 +1,4 @@
-import HttpClient from "./httpClient";
+import HttpClient from "./httpClient.js";
 const API_BASE = process.env.API_BASE_URL; // ej. "https://tuservidor/api"
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
