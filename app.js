@@ -205,10 +205,7 @@ Verifica tu folio e inténtalo de nuevo.`,
         "FechaEntrega:", analisis.fechaEntrega
       );
 
-      const mensaje = `El estatus de tu análisis ${analisis.folio} es:
-  • Estado: ${analisis.estatus}
-  • Fecha de solicitud: ${analisis.fecha ? new Date(analisis.fecha).toLocaleDateString("es-MX") : "NA"}
-  • Fecha de entrega: ${analisis.fechaEntrega ?? "NA"}
+      const mensaje = `Da click aquí para descargar los resultados https://laboratoriosbarrera.com.mx/resultados/${analisis.xID}
 
   ¿Necesitas algo más?
   1️⃣ Volver al menú
