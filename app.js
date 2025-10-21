@@ -185,20 +185,58 @@ Verifica tu folio e inténtalo de nuevo.`,
 },
 
   esperando_folio_descarga: async ({ userInput, celDestino, businessId }) => {
-    if (userInput.toUpperCase() === "XYZ98765") {
+    try {
+    console.log("👉 Iniciando consulta de estatus con folio:", userInput);
+
+    const data = await HttpClient.post(`${API_BASE}/AnalisisEstatusFolio`, {
+      Folio: userInput
+    });
+
+    console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
+
+    if (data && data.length > 0) {
+      const analisis = data[0];
+
+      console.log("👉 Primer registro recibido:", analisis);
+      console.log("👉 Campos individuales:",
+        "Folio:", analisis.folio,
+        "Fecha:", analisis.fecha,
+        "Estatus:", analisis.estatus,
+        "FechaEntrega:", analisis.fechaEntrega
+      );
+
+      const mensaje = `El estatus de tu análisis ${analisis.folio} es:
+  • Estado: ${analisis.estatus}
+  • Fecha de solicitud: ${analisis.fecha ? new Date(analisis.fecha).toLocaleDateString("es-MX") : "NA"}
+  • Fecha de entrega: ${analisis.fechaEntrega ?? "NA"}
+
+  ¿Necesitas algo más?
+  1️⃣ Volver al menú
+  2️⃣ Finalizar conversación`;
+
+      await sendWhatsappMessage(celDestino, mensaje, businessId);
+      return { step: "fin_estatus" };
+    } else {
+      console.log("👉 No se encontraron registros para el folio:", userInput);
+
       await sendWhatsappMessage(
         celDestino,
-        "Tu enlace de descarga está listo:\nhttps://labxyz.com/resultados/XYZ98765\nEl enlace expirará en 48 horas.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+        `No encontramos ningún registro con folio ${userInput}.
+Verifica tu folio e inténtalo de nuevo.`,
         businessId
       );
-      return { step: "fin_descarga" };
+      return { step: "esperando_folio_estatus" };
     }
+  } catch (error) {
+    console.error("❌ Error consultando estatus:", error);
+
     await sendWhatsappMessage(
       celDestino,
-      `No encontramos resultados disponibles para el folio ${userInput}.\nAsegúrate de que tus análisis hayan sido procesados.`,
+      "Ocurrió un error al consultar el estatus. Intenta más tarde.",
       businessId
     );
-    return { step: "esperando_folio_descarga" };
+    return { step: "esperando_folio_estatus" };
+  }
   },
 
   fin_estatus: async ({ userInput, celDestino, businessId }) =>
