@@ -133,7 +133,7 @@ const stepHandlers = {
   try {
     console.log("👉 Iniciando consulta de estatus con folio:", userInput);
 
-    const data = await HttpClient.post(`${API_BASE}/AnalisisEstatusFolio`, {
+    const data = await HttpClient.post(`${API_BASE}/api/WAPI/AnalisisEstatusFolio`, {
       Folio: userInput
     });
 
@@ -188,7 +188,7 @@ Verifica tu folio e inténtalo de nuevo.`,
     try {
     console.log("👉 Iniciando consulta de estatus con folio:", userInput);
 
-    const data = await HttpClient.post(`${API_BASE}/AnalisisEstatusFolio`, {
+    const data = await HttpClient.post(`${API_BASE}/api/WAPI/AnalisisEstatusFolio`, {
       Folio: userInput
     });
 
@@ -242,12 +242,32 @@ Verifica tu folio e inténtalo de nuevo.`,
     handleFin(userInput, celDestino, businessId),
 
   cotizacion: async ({ celDestino, businessId }) => {
-    await sendWhatsappMessage(
+    const data = await HttpClient.post(`${API_BASE}/api/Chat/ActivarAgente`, {
+      numeroWhatsApp: celDestino
+    });
+    console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
+
+    if (data && data.length > 0) {
+      const conversacion = data[0];
+      console.log("👉 Primer registro recibido:", conversacion);
+
+      await sendWhatsappMessage(
       celDestino,
       "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
       businessId
     );
     return { step: "fin_cotizacion" };
+    }else {
+      console.log("👉 No se encontraron registros para el folio:", userInput);
+
+      await sendWhatsappMessage(
+        celDestino,
+        `No se pudo iniciar una conversación en este momento, intenta más tarde, Horario de atención 9am a 2pm.`,
+        businessId
+      );
+      return { step: "fin_cotizacion" };
+    }
+
   },
 
   fin_cotizacion: async ({ userInput, celDestino, businessId }) =>
