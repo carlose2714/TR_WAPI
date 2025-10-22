@@ -335,23 +335,6 @@ app.post("/", async (req, res) => {
   res.sendStatus(200);
 });
 
-// Endpoint para recibir mensajes desde tu API .NET y reenviarlos a WhatsApp
-app.post("/send", async (req, res) => {
-  try {
-    const { to, message, businessId } = req.body;
-
-    console.log("👉 Reenviando mensaje a WhatsApp:", req.body);
-
-    // Usa tu helper existente
-    await sendWhatsappMessage(to, message, businessId);
-
-    res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("❌ Error en /send:", err);
-    res.status(500).json({ error: "No se pudo enviar el mensaje a WhatsApp" });
-  }
-});
-
 // Start the server
 app.listen(port, () => {
   console.log(`\nListening on port ${port}\n`);
