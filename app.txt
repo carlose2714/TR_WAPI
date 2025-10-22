@@ -274,7 +274,7 @@ Verifica tu folio e inténtalo de nuevo.`,
           businessId
         );
 
-        return { step: "chat_agente", conversacionId: conversacion.xID };
+        return { step: "fin_cotizacion" };
       } else {
         console.log("👉 No se encontraron registros para el folio:", userInput);
 
@@ -298,28 +298,7 @@ Verifica tu folio e inténtalo de nuevo.`,
     }
   },
   fin_cotizacion: async ({ userInput, celDestino, businessId }) =>
-    handleFin(userInput, celDestino, businessId),
-
-  chat_agente: async ({ userInput, celDestino, businessId, userState }) => {
-    // Reenviar mensaje a tu API .NET como IN
-    try {
-      console.log("👉 Reenviando mensaje al agente:", userInput);
-      await HttpClient.post(`${API_BASE}/api/Chat/EnviarMensaje`, {
-        ConversacionID: userState.conversacionId,
-        Direccion: "IN",
-        Remitente: celDestino,
-        Tipo: "TEXT",
-        Texto: userInput,
-        UrlAdjunto: businessId
-      });
-
-      // No responder automáticamente en WhatsApp, porque ahora el agente lleva la conversación
-      return userState; // mantener en chat_agente
-    } catch (err) {
-      console.log("Error en log de mensaje al agente:", err);
-    }
-
-  }
+    handleFin(userInput, celDestino, businessId)
 };
 
 // Handler común para pasos de finalización
@@ -385,25 +364,6 @@ app.post("/send", async (req, res) => {
   } catch (err) {
     console.error("❌ Error en /send:", err);
     res.status(500).json({ error: "No se pudo enviar el mensaje a WhatsApp" });
-  }
-});
-
-app.post("/close", async (req, res) => {
-  try {
-    const { to, message, businessId } = req.body;
-
-    console.log("👉 Cerrando conversación para:", to);
-
-    // 1. Resetear estado del usuario
-    userStates[to] = { step: "inicio" };
-
-    // 2. Mandar mensaje de cierre al cliente
-    await sendWhatsappMessage(to, message, businessId);
-
-    res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("❌ Error en /close:", err);
-    res.status(500).json({ error: "No se pudo cerrar la conversación" });
   }
 });
 
