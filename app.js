@@ -1,7 +1,7 @@
 const HttpClient = require('./httpClient'); // sin extensión si está en la misma carpeta
 const API_BASE = process.env.API_BASE_URL; // ej. "https://tuservidor/api"
 const express = require('express');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // Create an Express app
 const app = express();
 
@@ -130,27 +130,27 @@ const stepHandlers = {
   },
 
   esperando_folio_estatus: async ({ userInput, celDestino, businessId }) => {
-  try {
-    console.log("👉 Iniciando consulta de estatus con folio:", userInput);
+    try {
+      console.log("👉 Iniciando consulta de estatus con folio:", userInput);
 
-    const data = await HttpClient.post(`${API_BASE}/api/WAPI/AnalisisEstatusFolio`, {
-      Folio: userInput
-    });
+      const data = await HttpClient.post(`${API_BASE}/api/WAPI/AnalisisEstatusFolio`, {
+        Folio: userInput
+      });
 
-    console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
+      console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
 
-    if (data && data.length > 0) {
-      const analisis = data[0];
+      if (data && data.length > 0) {
+        const analisis = data[0];
 
-      console.log("👉 Primer registro recibido:", analisis);
-      console.log("👉 Campos individuales:",
-        "Folio:", analisis.folio,
-        "Fecha:", analisis.fecha,
-        "Estatus:", analisis.estatus,
-        "FechaEntrega:", analisis.fechaEntrega
-      );
+        console.log("👉 Primer registro recibido:", analisis);
+        console.log("👉 Campos individuales:",
+          "Folio:", analisis.folio,
+          "Fecha:", analisis.fecha,
+          "Estatus:", analisis.estatus,
+          "FechaEntrega:", analisis.fechaEntrega
+        );
 
-      const mensaje = `El estatus de tu análisis ${analisis.folio} es:
+        const mensaje = `El estatus de tu análisis ${analisis.folio} es:
   • Estado: ${analisis.estatus}
   • Fecha de solicitud: ${analisis.fecha ? new Date(analisis.fecha).toLocaleDateString("es-MX") : "NA"}
   • Fecha de entrega: ${analisis.fechaEntrega ?? "NA"}
@@ -159,81 +159,81 @@ const stepHandlers = {
   1️⃣ Volver al menú
   2️⃣ Finalizar conversación`;
 
-      await sendWhatsappMessage(celDestino, mensaje, businessId);
-      return { step: "fin_estatus" };
-    } else {
-      console.log("👉 No se encontraron registros para el folio:", userInput);
+        await sendWhatsappMessage(celDestino, mensaje, businessId);
+        return { step: "fin_estatus" };
+      } else {
+        console.log("👉 No se encontraron registros para el folio:", userInput);
+
+        await sendWhatsappMessage(
+          celDestino,
+          `No encontramos ningún registro con folio ${userInput}.
+Verifica tu folio e inténtalo de nuevo.`,
+          businessId
+        );
+        return { step: "esperando_folio_estatus" };
+      }
+    } catch (error) {
+      console.error("❌ Error consultando estatus:", error);
 
       await sendWhatsappMessage(
         celDestino,
-        `No encontramos ningún registro con folio ${userInput}.
-Verifica tu folio e inténtalo de nuevo.`,
+        "Ocurrió un error al consultar el estatus. Intenta más tarde.",
         businessId
       );
       return { step: "esperando_folio_estatus" };
     }
-  } catch (error) {
-    console.error("❌ Error consultando estatus:", error);
-
-    await sendWhatsappMessage(
-      celDestino,
-      "Ocurrió un error al consultar el estatus. Intenta más tarde.",
-      businessId
-    );
-    return { step: "esperando_folio_estatus" };
-  }
-},
+  },
 
   esperando_folio_descarga: async ({ userInput, celDestino, businessId }) => {
     try {
-    console.log("👉 Iniciando consulta de estatus con folio:", userInput);
+      console.log("👉 Iniciando consulta de estatus con folio:", userInput);
 
-    const data = await HttpClient.post(`${API_BASE}/api/WAPI/AnalisisEstatusFolio`, {
-      Folio: userInput
-    });
+      const data = await HttpClient.post(`${API_BASE}/api/WAPI/AnalisisEstatusFolio`, {
+        Folio: userInput
+      });
 
-    console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
+      console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
 
-    if (data && data.length > 0) {
-      const analisis = data[0];
+      if (data && data.length > 0) {
+        const analisis = data[0];
 
-      console.log("👉 Primer registro recibido:", analisis);
-      console.log("👉 Campos individuales:",
-        "Folio:", analisis.folio,
-        "Fecha:", analisis.fecha,
-        "Estatus:", analisis.estatus,
-        "FechaEntrega:", analisis.fechaEntrega
-      );
+        console.log("👉 Primer registro recibido:", analisis);
+        console.log("👉 Campos individuales:",
+          "Folio:", analisis.folio,
+          "Fecha:", analisis.fecha,
+          "Estatus:", analisis.estatus,
+          "FechaEntrega:", analisis.fechaEntrega
+        );
 
-      const mensaje = `Da click aquí para descargar los resultados https://laboratoriosbarrera.com.mx/resultados/${analisis.xID}
+        const mensaje = `Da click aquí para descargar los resultados https://laboratoriosbarrera.com.mx/resultados/${analisis.xID}
 
   ¿Necesitas algo más?
   1️⃣ Volver al menú
   2️⃣ Finalizar conversación`;
 
-      await sendWhatsappMessage(celDestino, mensaje, businessId);
-      return { step: "fin_estatus" };
-    } else {
-      console.log("👉 No se encontraron registros para el folio:", userInput);
+        await sendWhatsappMessage(celDestino, mensaje, businessId);
+        return { step: "fin_estatus" };
+      } else {
+        console.log("👉 No se encontraron registros para el folio:", userInput);
+
+        await sendWhatsappMessage(
+          celDestino,
+          `No encontramos ningún registro con folio ${userInput}.
+Verifica tu folio e inténtalo de nuevo.`,
+          businessId
+        );
+        return { step: "esperando_folio_estatus" };
+      }
+    } catch (error) {
+      console.error("❌ Error consultando estatus:", error);
 
       await sendWhatsappMessage(
         celDestino,
-        `No encontramos ningún registro con folio ${userInput}.
-Verifica tu folio e inténtalo de nuevo.`,
+        "Ocurrió un error al consultar el estatus. Intenta más tarde.",
         businessId
       );
       return { step: "esperando_folio_estatus" };
     }
-  } catch (error) {
-    console.error("❌ Error consultando estatus:", error);
-
-    await sendWhatsappMessage(
-      celDestino,
-      "Ocurrió un error al consultar el estatus. Intenta más tarde.",
-      businessId
-    );
-    return { step: "esperando_folio_estatus" };
-  }
   },
 
   fin_estatus: async ({ userInput, celDestino, businessId }) =>
@@ -241,23 +241,36 @@ Verifica tu folio e inténtalo de nuevo.`,
   fin_descarga: async ({ userInput, celDestino, businessId }) =>
     handleFin(userInput, celDestino, businessId),
 
-  cotizacion: async ({ celDestino, businessId }) => {
+  cotizacion: async ({ celDestino, businessId, userInput }) => {
+    // 1. Activar conversación en tu API
     const data = await HttpClient.post(`${API_BASE}/api/Chat/ActivarAgente`, {
       numeroWhatsApp: celDestino
     });
+
     console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
 
     if (data && data.length > 0) {
       const conversacion = data[0];
       console.log("👉 Primer registro recibido:", conversacion);
 
+      // 2. Guardar el mensaje entrante en tu API (DB + Hub)
+      await HttpClient.post(`${API_BASE}/api/Chat/EnviarMensaje`, {
+        ConversacionID: conversacion.xID,
+        Direccion: "IN", // viene del cliente
+        Remitente: celDestino,
+        Texto: userInput,
+        Tipo: "TEXT"
+      });
+
+      // 3. Responder al cliente en WhatsApp
       await sendWhatsappMessage(
-      celDestino,
-      "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
-      businessId
-    );
-    return { step: "fin_cotizacion" };
-    }else {
+        celDestino,
+        "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+        businessId
+      );
+
+      return { step: "fin_cotizacion" };
+    } else {
       console.log("👉 No se encontraron registros para el folio:", userInput);
 
       await sendWhatsappMessage(
@@ -265,11 +278,10 @@ Verifica tu folio e inténtalo de nuevo.`,
         `No se pudo iniciar una conversación en este momento, intenta más tarde, Horario de atención 9am a 2pm.`,
         businessId
       );
+
       return { step: "fin_cotizacion" };
     }
-
   },
-
   fin_cotizacion: async ({ userInput, celDestino, businessId }) =>
     handleFin(userInput, celDestino, businessId)
 };
@@ -321,6 +333,23 @@ app.post("/", async (req, res) => {
   }
 
   res.sendStatus(200);
+});
+
+// Endpoint para recibir mensajes desde tu API .NET y reenviarlos a WhatsApp
+app.post("/send", async (req, res) => {
+  try {
+    const { to, message, businessId } = req.body;
+
+    console.log("👉 Reenviando mensaje a WhatsApp:", req.body);
+
+    // Usa tu helper existente
+    await sendWhatsappMessage(to, message, businessId);
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("❌ Error en /send:", err);
+    res.status(500).json({ error: "No se pudo enviar el mensaje a WhatsApp" });
+  }
 });
 
 // Start the server
