@@ -270,7 +270,7 @@ Verifica tu folio e inténtalo de nuevo.`,
         // 3. Responder al cliente en WhatsApp
         await sendWhatsappMessage(
           celDestino,
-          "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+          "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.",
           businessId
         );
 
