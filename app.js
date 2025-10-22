@@ -362,7 +362,8 @@ app.post("/", async (req, res) => {
       userInput,
       celDestino,
       businessId,
-      message
+      message,
+      userState
     });
 
     await markAsRead(businessId, message.id);
