@@ -23,7 +23,8 @@ async function sendWhatsappMessage(to, body, business_phone_number_id, contextMe
     text: { body }
   };
   if (contextMessageId) payload.context = { message_id: contextMessageId };
-
+  console.log("👉 Enviando mensaje WhatsApp:", payload);
+  console.log("👉 A business_phone_number_id:", business_phone_number_id);
   const response = await fetch(
     `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
     {
@@ -333,6 +334,23 @@ app.post("/", async (req, res) => {
   }
 
   res.sendStatus(200);
+});
+
+// Endpoint para recibir mensajes desde tu API .NET y reenviarlos a WhatsApp
+app.post("/send", async (req, res) => {
+  try {
+    const { to, message, businessId } = req.body;
+
+    console.log("👉 Reenviando mensaje a WhatsApp:", req.body);
+
+    // Usa tu helper existente
+    await sendWhatsappMessage(to, message, businessId);
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("❌ Error en /send:", err);
+    res.status(500).json({ error: "No se pudo enviar el mensaje a WhatsApp" });
+  }
 });
 
 // Start the server
