@@ -244,36 +244,50 @@ Verifica tu folio e inténtalo de nuevo.`,
 
   cotizacion: async ({ celDestino, businessId, userInput }) => {
     // 1. Activar conversación en tu API
-    const data = await HttpClient.post(`${API_BASE}/api/Chat/ActivarAgente`, {
-      numeroWhatsApp: celDestino
-    });
+    try {
 
-    console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
 
-    if (data && data.length > 0) {
-      const conversacion = data[0];
-      console.log("👉 Primer registro recibido:", conversacion);
-
-      // 2. Guardar el mensaje entrante en tu API (DB + Hub)
-      await HttpClient.post(`${API_BASE}/api/Chat/EnviarMensaje`, {
-        ConversacionID: conversacion.xID,
-        Direccion: "IN", // viene del cliente
-        Remitente: celDestino,
-        Texto: userInput,
-        Tipo: "TEXT"
+      const data = await HttpClient.post(`${API_BASE}/api/Chat/ActivarAgente`, {
+        numeroWhatsApp: celDestino
       });
 
-      // 3. Responder al cliente en WhatsApp
-      await sendWhatsappMessage(
-        celDestino,
-        "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
-        businessId
-      );
+      console.log("👉 Respuesta cruda del API:", JSON.stringify(data, null, 2));
 
-      return { step: "fin_cotizacion" };
-    } else {
-      console.log("👉 No se encontraron registros para el folio:", userInput);
+      if (data && data.length > 0) {
+        const conversacion = data[0];
+        console.log("👉 Primer registro recibido:", conversacion);
 
+        // 2. Guardar el mensaje entrante en tu API (DB + Hub)
+        await HttpClient.post(`${API_BASE}/api/Chat/EnviarMensaje`, {
+          ConversacionID: conversacion.xID,
+          Direccion: "IN", // viene del cliente
+          Remitente: celDestino,
+          Tipo: "TEXT",
+          Texto: userInput,
+          UrlAdjunto: businessId
+        });
+
+        // 3. Responder al cliente en WhatsApp
+        await sendWhatsappMessage(
+          celDestino,
+          "¡Gracias! Hemos recibido tu solicitud. Un asesor se pondrá en contacto contigo pronto.\n¿Necesitas algo más?\n1️⃣ Volver al menú\n2️⃣ Finalizar conversación",
+          businessId
+        );
+
+        return { step: "fin_cotizacion" };
+      } else {
+        console.log("👉 No se encontraron registros para el folio:", userInput);
+
+        await sendWhatsappMessage(
+          celDestino,
+          `No se pudo iniciar una conversación en este momento, intenta más tarde, Horario de atención 9am a 2pm.`,
+          businessId
+        );
+
+        return { step: "fin_cotizacion" };
+      }
+    } catch (error) {
+      console.error("❌ Error consultando estatus:", error);
       await sendWhatsappMessage(
         celDestino,
         `No se pudo iniciar una conversación en este momento, intenta más tarde, Horario de atención 9am a 2pm.`,
