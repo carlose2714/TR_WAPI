@@ -26,7 +26,7 @@ async function sendWhatsappMessage(to, body, business_phone_number_id, contextMe
   console.log("👉 Enviando mensaje WhatsApp:", payload);
   console.log("👉 A business_phone_number_id:", business_phone_number_id);
   const response = await fetch(
-    `https://graph.facebook.com/v22.0/${business_phone_number_id}/messages`,
+    `https://graph.facebook.com/v24.0/${business_phone_number_id}/messages`,
     {
       method: "POST",
       headers: {
@@ -379,7 +379,7 @@ app.post("/", async (req, res) => {
         console.log(whatsappToken);
         // Paso 1: obtener metadata del media
         const mediaMeta = await HttpClient.get(
-          `https://graph.facebook.com/v20.0/${imageId}`,
+          `https://graph.facebook.com/v24.0/${imageId}`,
           { headers: { Authorization: `Bearer ${whatsappToken}` } }
         );
 
