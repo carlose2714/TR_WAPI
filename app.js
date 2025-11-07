@@ -352,24 +352,61 @@ app.post("/", async (req, res) => {
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const businessId = req.body.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id;
 
-  if (message?.type === "text") {
-    const celDestino = getCelDestino(message.from);
-    const userInput = message.text.body.trim();
-    const userState = userStates[celDestino] || { step: "inicio" };
+  try {
+    if (message?.type === "text") {
+      const celDestino = getCelDestino(message.from);
+      const userInput = message.text.body.trim();
+      const userState = userStates[celDestino] || { step: "inicio" };
 
-    const handler = stepHandlers[userState.step] || stepHandlers["inicio"];
-    userStates[celDestino] = await handler({
-      userInput,
-      celDestino,
-      businessId,
-      message,
-      userState
-    });
+      const handler = stepHandlers[userState.step] || stepHandlers["inicio"];
+      userStates[celDestino] = await handler({
+        userInput,
+        celDestino,
+        businessId,
+        message,
+        userState
+      });
+    }
+    else if (message.type === "image") {
+      // 🔹 Solo se aceptan imágenes en modo chat_agente
+      if (userState.step === "chat_agente" && userState.conversacionId) {
+        const imageId = message.image.id;
+        const caption = message.image.caption || "";
+
+        // Obtener URL de descarga desde la API de WhatsApp
+        const mediaResponse = await HttpClient.get(
+          `https://graph.facebook.com/v20.0/${imageId}`,
+          { headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` } }
+        );
+
+        const mediaUrl = mediaResponse.data.url;
+
+        // Reenviar a tu API .NET
+        await HttpClient.post(`${API_BASE}/api/Chat/EnviarMensaje`, {
+          ConversacionID: userState.conversacionId,
+          Direccion: "IN",
+          Remitente: celDestino,
+          Tipo: "IMAGE",
+          Texto: caption,
+          UrlAdjunto: mediaUrl
+        });
+      } else {
+        // 🔹 Si no está en chat_agente → mensaje no válido
+        await sendWhatsappMessage(
+          celDestino,
+          "❌ Mensaje no válido. Solo puedes enviar imágenes cuando estás en conversación con un agente.",
+          businessId
+        );
+      }
+    }
 
     await markAsRead(businessId, message.id);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("❌ Error procesando mensaje:", err);
+    res.sendStatus(500);
   }
 
-  res.sendStatus(200);
 });
 
 // Endpoint para recibir mensajes desde tu API .NET y reenviarlos a WhatsApp
