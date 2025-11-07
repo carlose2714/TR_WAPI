@@ -351,12 +351,16 @@ async function handleFin(userInput, celDestino, businessId) {
 app.post("/", async (req, res) => {
   const message = req.body.entry?.[0]?.changes[0]?.value?.messages?.[0];
   const businessId = req.body.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id;
+  if (!message) return res.sendStatus(200);
+
+  const celDestino = getCelDestino(message.from);
+  const userState = userStates[celDestino] || { step: "inicio" };
 
   try {
     if (message?.type === "text") {
-      const celDestino = getCelDestino(message.from);
+      //const celDestino = getCelDestino(message.from);
       const userInput = message.text.body.trim();
-      const userState = userStates[celDestino] || { step: "inicio" };
+      //const userState = userStates[celDestino] || { step: "inicio" };
 
       const handler = stepHandlers[userState.step] || stepHandlers["inicio"];
       userStates[celDestino] = await handler({
