@@ -372,20 +372,26 @@ app.post("/", async (req, res) => {
       });
     }
     else if (message.type === "image") {
-      // 🔹 Solo se aceptan imágenes en modo chat_agente
       if (userState.step === "chat_agente" && userState.conversacionId) {
         const imageId = message.image.id;
         const caption = message.image.caption || "";
-
-        // Obtener URL de descarga desde la API de WhatsApp
-        const mediaResponse = await HttpClient.get(
+        console.log("👉 Procesando imagen con ID:", imageId);
+        console.log(whatsappToken);
+        // Paso 1: obtener metadata del media
+        const mediaMeta = await HttpClient.get(
           `https://graph.facebook.com/v20.0/${imageId}`,
           { headers: { Authorization: `Bearer ${whatsappToken}` } }
         );
 
-        const mediaUrl = mediaResponse.data.url;
+        const mediaUrl = mediaMeta.data.url;
+        console.log("👉 URL temporal del media:", mediaUrl);
+        // Paso 2: opcional, descargar binario si quieres guardarlo localmente
+        // const imageFile = await HttpClient.get(mediaUrl, {
+        //   headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` },
+        //   responseType: "arraybuffer"
+        // });
 
-        // Reenviar a tu API .NET
+        // Reenviar a tu API .NET con la URL
         await HttpClient.post(`${API_BASE}/api/Chat/EnviarMensaje`, {
           ConversacionID: userState.conversacionId,
           Direccion: "IN",
@@ -395,7 +401,6 @@ app.post("/", async (req, res) => {
           UrlAdjunto: mediaUrl
         });
       } else {
-        // 🔹 Si no está en chat_agente → mensaje no válido
         await sendWhatsappMessage(
           celDestino,
           "❌ Mensaje no válido. Solo puedes enviar imágenes cuando estás en conversación con un agente.",
