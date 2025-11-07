@@ -355,7 +355,7 @@ app.post("/", async (req, res) => {
 
   const celDestino = getCelDestino(message.from);
   const userState = userStates[celDestino] || { step: "inicio" };
-
+  console.log("📩 Mensaje entrante:", JSON.stringify(message, null, 2));
   try {
     if (message?.type === "text") {
       //const celDestino = getCelDestino(message.from);
@@ -380,7 +380,7 @@ app.post("/", async (req, res) => {
         // Obtener URL de descarga desde la API de WhatsApp
         const mediaResponse = await HttpClient.get(
           `https://graph.facebook.com/v20.0/${imageId}`,
-          { headers: { Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}` } }
+          { headers: { Authorization: `Bearer ${whatsappToken}` } }
         );
 
         const mediaUrl = mediaResponse.data.url;
