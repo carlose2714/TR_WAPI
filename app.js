@@ -378,12 +378,17 @@ app.post("/", async (req, res) => {
         console.log("👉 Procesando imagen con ID:", imageId);
         console.log(whatsappToken);
         // Paso 1: obtener metadata del media
-        const mediaMeta = await HttpClient.get(
-          `https://graph.facebook.com/v24.0/${imageId}`,
-          { headers: { Authorization: `Bearer ${whatsappToken}` } }
-        );
+        const mediaMeta = await fetch(
+          `https://graph.facebook.com/v24.0/${imageId}`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${whatsappToken}`
 
-        const mediaUrl = mediaMeta.data.url;
+          }
+        }
+        );
+        const metaJson = await mediaMeta.json();
+        const mediaUrl = metaJson.url;
         console.log("👉 URL temporal del media:", mediaUrl);
         // Paso 2: opcional, descargar binario si quieres guardarlo localmente
         // const imageFile = await HttpClient.get(mediaUrl, {
